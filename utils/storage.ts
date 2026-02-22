@@ -8,6 +8,7 @@ export const loadGame = async (): Promise<{
   solution: Board;
   size: SudokuSize;
   difficulty: Difficulty;
+  seconds: number;
 } | null> => {
   const savedGame = await AsyncStorage.getItem("@saved_game");
   if (!savedGame) return null;
@@ -21,10 +22,18 @@ export const saveGame = async (
   size: SudokuSize,
   difficulty: Difficulty,
   lockedPositions: boolean[][] | null,
+  seconds: number,
 ) => {
   await AsyncStorage.setItem(
     "@saved_game",
-    JSON.stringify({ board, solution, size, difficulty, lockedPositions }),
+    JSON.stringify({
+      board,
+      solution,
+      size,
+      difficulty,
+      lockedPositions,
+      seconds,
+    }),
   );
 };
 
@@ -32,7 +41,7 @@ export const saveGame = async (
 export const saveTime = async (seconds: number, difficulty: Difficulty) => {
   const best = await getBestTime(difficulty);
 
-  if (seconds < best) {
+  if (seconds < best || best === 0) {
     await AsyncStorage.setItem(`@best_time_${difficulty}`, seconds.toString());
   }
 

@@ -38,15 +38,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 24,
-    gap: 16,
+    gap: 20,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
+    marginVertical: 16,
   },
   message: {
     fontSize: 16,
-    marginBottom: 32,
     textAlign: "center",
   },
   buttonContainer: {

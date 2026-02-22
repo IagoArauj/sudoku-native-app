@@ -1,6 +1,6 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Colors } from "@/constants/theme";
+import { Colors, Spacing } from "@/constants/theme";
 import { useSudoku } from "@/providers/game-provider";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
@@ -15,6 +15,7 @@ import * as Haptics from "expo-haptics";
 import ConfettiCannon from "react-native-confetti-cannon";
 import ThemedModal from "@/components/ui/themed-modal";
 import ThemedButton from "@/components/themed-button";
+import { saveTime } from "@/utils/storage";
 
 const hapticFeedback = () => {
   if (process.env.EXPO_OS === "ios") {
@@ -59,13 +60,16 @@ export default function GameScreen() {
   }, [sudoku.board]);
 
   useEffect(() => {
-    if (selectedCell?.col && selectedCell?.row) {
-      console.log(
-        `Selected cell: ${selectedCell.col}x${selectedCell.row}, valid numbers: `,
-        selectedCell.validNumbers,
-      );
+    if (sudoku) {
+      sudoku.setIsTimerActive(true);
     }
-  }, [selectedCell, sudoku]);
+
+    return () => {
+      if (sudoku) {
+        sudoku.setIsTimerActive(false);
+      }
+    };
+  }, [sudoku]);
 
   return sudoku.board ? (
     <ThemedView style={{ flex: 1, gap: 10 }}>
@@ -85,7 +89,7 @@ export default function GameScreen() {
             {sudoku.size}x{sudoku.size}
           </ThemedText>
           <ThemedText style={{ flex: 1, textAlign: "right" }} type="subtle">
-            00:00:00
+            {sudoku.formattedTime}
           </ThemedText>
         </View>
 
@@ -336,11 +340,13 @@ export default function GameScreen() {
               gap: 16,
             }}
           >
-            <ThemedText>Tempo: 05:20</ThemedText>
+            <ThemedText>Tempo: {sudoku.formattedTime}</ThemedText>
             <ThemedButton
               style={{ width: "100%" }}
               title="Voltar ao menu"
               onPress={() => {
+                saveTime(sudoku.seconds, sudoku.difficulty);
+
                 sudoku.clearGame();
                 router.navigate("/");
               }}
@@ -363,7 +369,7 @@ export default function GameScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 10,
+    padding: Spacing.two,
     gap: 10,
     marginVertical: "auto",
   },

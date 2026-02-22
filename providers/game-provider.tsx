@@ -3,6 +3,7 @@
 import {
   Board,
   Difficulty,
+  formatGameTime,
   generateSudoku,
   isValid,
   SudokuSize,
@@ -16,6 +17,7 @@ import {
   useContext,
   useMemo,
 } from "react";
+import { AppState, AppStateStatus } from "react-native";
 
 type GameContextType = {
   board: Board | null;
@@ -25,6 +27,9 @@ type GameContextType = {
   loading: boolean;
   size: SudokuSize;
   emptyCells: { row: number; col: number }[] | null;
+  seconds: number;
+  formattedTime: string;
+  setIsTimerActive: (active: boolean) => void;
   createNewGame: (size: SudokuSize, difficulty: Difficulty) => Promise<void>;
   addNumber: (row: number, col: number, value: number) => boolean;
   removeNumber: (row: number, col: number) => boolean;
@@ -60,6 +65,88 @@ export const GameContextProvider = ({
   );
   const [size, setSize] = useState<SudokuSize>(9);
   const [loading, setLoading] = useState(false);
+  const [seconds, setSeconds] = useState(0);
+  const [isTimerActive, setIsTimerActive] = useState(false);
+
+  // Check all empty cells
+  const emptyCells = useMemo(() => {
+    if (!board || loading) return null;
+
+    console.log("emptyCells", board);
+
+    const emptyCells = [];
+    for (let row = 0; row < size; row++) {
+      for (let col = 0; col < size; col++) {
+        if (board[row][col] === 0) emptyCells.push({ row, col });
+      }
+    }
+
+    if (emptyCells.length === 0) return null;
+    return emptyCells;
+  }, [board, size, loading]);
+
+  // time formated in HH:MM:SS
+  const formattedTime = useMemo(() => {
+    return formatGameTime(seconds);
+  }, [seconds]);
+
+  // save game on unmount and when app go to background
+  useEffect(() => {
+    const subscription = AppState.addEventListener(
+      "change",
+      (nextAppState: AppStateStatus) => {
+        if (
+          (nextAppState === "inactive" || nextAppState === "background") &&
+          board &&
+          solution &&
+          lockedPositions &&
+          !loading
+        ) {
+          saveGame(board, solution, size, difficulty, lockedPositions, seconds);
+        }
+      },
+    );
+
+    return () => {
+      subscription.remove();
+      if (!board || loading || !solution) return;
+      saveGame(board, solution, size, difficulty, lockedPositions, seconds);
+    };
+  }, [board, solution, size, difficulty, seconds, lockedPositions, loading]);
+
+  // timers
+  useEffect(() => {
+    let interval: number;
+    let autoSaveInterval: number;
+
+    // count only when board is loaded and empty cells exist
+    interval = setInterval(() => {
+      if (board && !loading && emptyCells && isTimerActive) {
+        setSeconds((prev) => prev + 1);
+      }
+    }, 1000);
+
+    // auto save every 30 seconds
+    autoSaveInterval = setInterval(() => {
+      if (board && solution)
+        saveGame(board, solution, size, difficulty, lockedPositions, seconds);
+    }, 30000);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(autoSaveInterval);
+    };
+  }, [
+    board,
+    solution,
+    size,
+    difficulty,
+    seconds,
+    lockedPositions,
+    loading,
+    isTimerActive,
+    emptyCells,
+  ]);
 
   useEffect(() => {
     const load = async () => {
@@ -75,6 +162,7 @@ export const GameContextProvider = ({
       setLockedPositions(game.lockedPositions);
       setSize(game.size);
       setDifficulty(game.difficulty);
+      setSeconds(game.seconds);
       setLoading(false);
     };
 
@@ -103,6 +191,7 @@ export const GameContextProvider = ({
         size,
         difficulty,
         game.lockedPositions,
+        0,
       );
       setBoard(game.puzzle);
       setSolution(game.solution);
@@ -110,6 +199,8 @@ export const GameContextProvider = ({
       setLoading(false);
       setSize(size);
       setDifficulty(difficulty);
+      setSeconds(0);
+      setIsTimerActive(true);
     },
     [],
   );
@@ -132,11 +223,20 @@ export const GameContextProvider = ({
       newBoard[row][col] = num;
       setBoard(newBoard);
 
-      saveGame(newBoard, solution, size, difficulty, lockedPositions);
+      saveGame(newBoard, solution, size, difficulty, lockedPositions, seconds);
 
       return true;
     },
-    [board, loading, setBoard, solution, size, difficulty, lockedPositions],
+    [
+      board,
+      loading,
+      setBoard,
+      solution,
+      size,
+      difficulty,
+      lockedPositions,
+      seconds,
+    ],
   );
 
   /**
@@ -155,11 +255,20 @@ export const GameContextProvider = ({
       newBoard[row][col] = 0;
       setBoard(newBoard);
 
-      saveGame(newBoard, solution, size, difficulty, lockedPositions);
+      saveGame(newBoard, solution, size, difficulty, lockedPositions, seconds);
 
       return true;
     },
-    [board, loading, setBoard, solution, size, difficulty, lockedPositions],
+    [
+      board,
+      loading,
+      setBoard,
+      solution,
+      size,
+      difficulty,
+      lockedPositions,
+      seconds,
+    ],
   );
 
   /**
@@ -183,25 +292,6 @@ export const GameContextProvider = ({
     },
     [board, loading, size, solution],
   );
-
-  /**
-   * Check all empty cells
-   */
-  const emptyCells = useMemo(() => {
-    if (!board || loading) return null;
-
-    console.log("emptyCells", board);
-
-    const emptyCells = [];
-    for (let row = 0; row < size; row++) {
-      for (let col = 0; col < size; col++) {
-        if (board[row][col] === 0) emptyCells.push({ row, col });
-      }
-    }
-
-    if (emptyCells.length === 0) return null;
-    return emptyCells;
-  }, [board, size, loading]);
 
   /**
    * Generate a random tip from the solution board, that is not already filled in
@@ -241,12 +331,15 @@ export const GameContextProvider = ({
         size,
         difficulty,
         emptyCells,
+        formattedTime,
+        seconds,
         createNewGame,
         removeNumber,
         validNumbers,
         addNumber,
         generateTip,
         clearGame,
+        setIsTimerActive,
       }}
     >
       {children}

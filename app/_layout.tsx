@@ -10,6 +10,8 @@ import "react-native-reanimated";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Button, Platform } from "react-native";
 import { GameContextProvider } from "@/providers/game-provider";
+import { isLiquidGlassAvailable } from "expo-glass-effect";
+import { Colors } from "@/constants/theme";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -43,8 +45,27 @@ export default function RootLayout() {
           <Stack.Screen
             name="confirm-delete-stats"
             options={{
-              presentation: "modal",
-              title: "Excluir Estatísticas?",
+              headerTransparent: Platform.OS === "ios",
+              headerLargeTitleEnabled: false,
+              title: "",
+              presentation: isLiquidGlassAvailable() ? "formSheet" : "modal",
+              headerBackButtonDisplayMode: "minimal",
+              sheetGrabberVisible: true,
+              sheetAllowedDetents: [0.8],
+              sheetInitialDetentIndex: 0,
+              contentStyle: {
+                backgroundColor: isLiquidGlassAvailable()
+                  ? "transparent"
+                  : Colors[colorScheme ?? "light"].background,
+              },
+              headerStyle: {
+                backgroundColor: isLiquidGlassAvailable()
+                  ? "transparent"
+                  : Colors[colorScheme ?? "light"].background,
+              },
+              headerBlurEffect: isLiquidGlassAvailable()
+                ? undefined
+                : (colorScheme ?? "light"),
             }}
           />
         </Stack>
