@@ -3,12 +3,12 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { Stack, useRouter } from "expo-router";
+import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { Button, Platform } from "react-native";
+import { Platform } from "react-native";
 import { GameContextProvider } from "@/providers/game-provider";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Colors } from "@/constants/theme";

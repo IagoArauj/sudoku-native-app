@@ -3,7 +3,7 @@ import { BottomTabInset, Spacing } from "@/constants/theme";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { formatGameTime } from "@/utils/game";
 import { getBestTime, getLastTimes } from "@/utils/storage";
-import { useFocusEffect, useTheme } from "@react-navigation/core";
+import { useFocusEffect } from "@react-navigation/core";
 import { useState } from "react";
 import { Platform, ScrollView, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
