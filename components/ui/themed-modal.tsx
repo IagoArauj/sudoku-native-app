@@ -1,22 +1,21 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Modal,
-  View,
-  Text,
+  ModalProps,
   StyleSheet,
-  Pressable,
-  ViewStyle,
+  View,
+  ViewStyle
 } from "react-native";
-import { ThemedView } from "../themed-view";
 import { ThemedText } from "../themed-text";
+import { ThemedView } from "../themed-view";
 
-type ModalProps = {
+type ThemedModalProps = {
   visible: boolean;
   title: string;
   children: React.ReactNode;
   containerStyle?: ViewStyle;
   contentStyle?: ViewStyle;
-};
+} & ModalProps;
 
 export default function ThemedModal({
   visible,
@@ -24,13 +23,11 @@ export default function ThemedModal({
   children,
   containerStyle,
   contentStyle,
-}: ModalProps) {
+  animationType = "fade",
+  ...props
+}: ThemedModalProps) {
   return (
-    <Modal
-      animationType="fade" // ou "slide"
-      transparent={true}
-      visible={visible}
-    >
+    <Modal animationType={animationType} visible={visible} {...props}>
       <View style={[styles.overlay, containerStyle]}>
         <ThemedView style={[styles.modalContent, contentStyle]}>
           <ThemedText style={styles.title}>{title}</ThemedText>

@@ -1,12 +1,12 @@
 import { Platform } from "react-native";
 
+import ThemedButton from "@/components/themed-button";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { BottomTabInset, Fonts, Spacing } from "@/constants/theme";
-import ThemedButton from "@/components/themed-button";
+import { useThemeColor } from "@/hooks/use-theme-color";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useThemeColor } from "@/hooks/use-theme-color";
 
 export default function TabTwoScreen() {
   const router = useRouter();

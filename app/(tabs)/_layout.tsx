@@ -1,4 +1,4 @@
-import { NativeTabs, Icon, Label } from "expo-router/unstable-native-tabs";
+import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
 import React from "react";
 
 import { Colors } from "@/constants/theme";
@@ -20,7 +20,7 @@ export default function TabLayout() {
         <Label>Estatísticas</Label>
         <Icon
           sf={{ default: "chart.bar", selected: "chart.bar.fill" }}
-          drawable="ic_menu_game"
+          drawable="ic_menu"
         />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="config">

@@ -7,11 +7,11 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
+import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { Platform } from "react-native";
 import { GameContextProvider } from "@/providers/game-provider";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
-import { Colors } from "@/constants/theme";
+import { Platform } from "react-native";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -51,7 +51,7 @@ export default function RootLayout() {
               presentation: isLiquidGlassAvailable() ? "formSheet" : "modal",
               headerBackButtonDisplayMode: "minimal",
               sheetGrabberVisible: true,
-              sheetAllowedDetents: [0.8],
+              sheetAllowedDetents: [0.3],
               sheetInitialDetentIndex: 0,
               contentStyle: {
                 backgroundColor: isLiquidGlassAvailable()
