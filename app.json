@@ -4,7 +4,7 @@
     "slug": "sudoku-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icons/ios-icon.png",
+    "icon": "./assets/icons/ios-light.png",
     "scheme": "sudokuapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -12,9 +12,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.sudoku-app",
       "icon": {
-        "dark": "./assets/icons/ios-icon.png",
-        "light": "./assets/icons/ios-icon.png",
-        "tinted": "./assets/icons/ios-icon.png"
+        "dark": "./assets/icons/ios-dark.png",
+        "light": "./assets/icons/ios-light.png",
+        "tinted": "./assets/icons/ios-tinted.png"
       }
     },
     "android": {

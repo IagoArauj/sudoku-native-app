@@ -1,7 +1,11 @@
+import ThemedButton from "@/components/themed-button";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import ThemedModal from "@/components/ui/themed-modal";
 import { Colors, Spacing } from "@/constants/theme";
 import { useSudoku } from "@/providers/game-provider";
+import { saveTime } from "@/utils/storage";
+import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -11,11 +15,7 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-import * as Haptics from "expo-haptics";
 import ConfettiCannon from "react-native-confetti-cannon";
-import ThemedModal from "@/components/ui/themed-modal";
-import ThemedButton from "@/components/themed-button";
-import { saveTime } from "@/utils/storage";
 
 const hapticFeedback = () => {
   if (process.env.EXPO_OS === "ios") {
@@ -339,6 +339,12 @@ export default function GameScreen() {
             contentStyle={{
               gap: 16,
             }}
+            onRequestClose={() => {
+              saveTime(sudoku.seconds, sudoku.difficulty);
+              sudoku.clearGame();
+              router.navigate("/");
+            }}
+            transparent
           >
             <ThemedText>Tempo: {sudoku.formattedTime}</ThemedText>
             <ThemedButton
