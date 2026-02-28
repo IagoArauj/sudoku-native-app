@@ -51,8 +51,6 @@ export default function TabTwoScreen() {
         Configurações
       </ThemedText>
 
-      {/* Outros itens de configuração aqui... */}
-
       <ThemedButton
         title="Limpar Dados de Estatística"
         type="danger"

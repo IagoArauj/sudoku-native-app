@@ -7,7 +7,7 @@ import { useSudoku } from "@/providers/game-provider";
 import { saveTime } from "@/utils/storage";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import React, { memo, useEffect, useRef, useState } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -25,8 +25,149 @@ const hapticFeedback = () => {
   }
 };
 
+const GameTime = () => {
+  const { formattedTime } = useSudoku();
+
+  return (
+    <ThemedText style={{ flex: 1, textAlign: "right" }} type="subtle">
+      {formattedTime}
+    </ThemedText>
+  );
+};
+
+const PureGameBoard = memo(
+  ({
+    board,
+    size,
+    selectedCell,
+    setSelectedCell,
+    validNumbers,
+    lockedPositions,
+    colorScheme,
+  }: {
+    board: number[][];
+    size: number;
+    selectedCell: { row: number; col: number; validNumbers: number[] } | null;
+    setSelectedCell: React.Dispatch<
+      React.SetStateAction<{
+        row: number;
+        col: number;
+        validNumbers: number[];
+      } | null>
+    >;
+    validNumbers: (row: number, col: number) => number[];
+    lockedPositions: boolean[][];
+    colorScheme: "light" | "dark";
+  }) => {
+    if (!board) return null;
+    const boxSize = Math.sqrt(size);
+
+    return (
+      <View style={styles.gameBoard}>
+        {board.map((row: number[], rowIndex: number) => (
+          <View key={rowIndex} style={styles.row}>
+            {row.map((cell, cellIndex) => {
+              const boxSize = Math.sqrt(size);
+              const isSameRow = selectedCell?.row === rowIndex;
+              const isSameCol = selectedCell?.col === cellIndex;
+              const isSelected = isSameRow && isSameCol;
+
+              const isSameBox =
+                selectedCell &&
+                Math.floor(rowIndex / boxSize) ===
+                  Math.floor(selectedCell.row / boxSize) &&
+                Math.floor(cellIndex / boxSize) ===
+                  Math.floor(selectedCell.col / boxSize);
+
+              const isAdjacent = isSameRow || isSameCol;
+
+              return (
+                <Pressable
+                  key={cellIndex}
+                  onPressOut={hapticFeedback}
+                  onPress={() =>
+                    setSelectedCell({
+                      row: rowIndex,
+                      col: cellIndex,
+                      validNumbers: validNumbers(rowIndex, cellIndex),
+                    })
+                  }
+                  style={({ pressed }) => [
+                    {
+                      backgroundColor: Colors[colorScheme ?? "dark"].background,
+                    },
+                    styles.cell,
+                    isSelected
+                      ? styles.selectedCell
+                      : isAdjacent
+                        ? selectedCellAdjacentStyle[colorScheme ?? "dark"]
+                        : isSameBox
+                          ? selectedCellBoxStyle[colorScheme ?? "dark"]
+                          : null,
+                    pressed && styles.buttonPressed,
+                  ]}
+                >
+                  <ThemedText
+                    style={[
+                      styles.cellText,
+                      isAdjacent &&
+                        selectedCellAdjacentTextStyle[colorScheme ?? "dark"],
+                      lockedPositions?.[rowIndex][cellIndex] && {
+                        fontWeight: "700",
+                        opacity: 0.7,
+                      },
+                    ]}
+                  >
+                    {cell !== 0 ? cell : ""}
+                  </ThemedText>
+                </Pressable>
+              );
+            })}
+          </View>
+        ))}
+
+        {Array.from({ length: boxSize - 1 }).map((_, i) => (
+          <React.Fragment key={i}>
+            {/* Linhas Verticais */}
+            <View
+              style={[
+                styles.thickLineVertical,
+                {
+                  left: `${((i + 1) * 100) / boxSize}%`,
+                  backgroundColor: colorScheme === "dark" ? "#fff" : "#000",
+                },
+              ]}
+            />
+            {/* Linhas Horizontais */}
+            <View
+              style={[
+                styles.thickLineHorizontal,
+                {
+                  top: `${((i + 1) * 100) / boxSize}%`,
+                  backgroundColor: colorScheme === "dark" ? "#fff" : "#000",
+                },
+              ]}
+            />
+          </React.Fragment>
+        ))}
+      </View>
+    );
+  },
+);
+
 export default function GameScreen() {
-  const sudoku = useSudoku();
+  const {
+    addNumber,
+    board,
+    difficulty,
+    emptyCells,
+    generateTip,
+    lockedPositions,
+    removeNumber,
+    setIsTimerActive,
+    size,
+    validNumbers,
+  } = useSudoku();
   const colorScheme = useColorScheme();
 
   const [selectedCell, setSelectedCell] = useState<{
@@ -47,7 +188,7 @@ export default function GameScreen() {
   useEffect(() => {
     if (!timeoutRef.current)
       timeoutRef.current = setTimeout(() => {
-        if (!sudoku.board) {
+        if (!board) {
           router.navigate("/game-settings");
         }
       }, 2000);
@@ -57,21 +198,19 @@ export default function GameScreen() {
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [sudoku.board]);
+  }, [board]);
 
   useEffect(() => {
-    if (sudoku) {
-      sudoku.setIsTimerActive(true);
+    if (board) {
+      setIsTimerActive(true);
     }
 
     return () => {
-      if (sudoku) {
-        sudoku.setIsTimerActive(false);
-      }
+      setIsTimerActive(false);
     };
-  }, [sudoku]);
+  }, [board, setIsTimerActive]);
 
-  return sudoku.board ? (
+  return board && lockedPositions && size ? (
     <ThemedView style={{ flex: 1, gap: 10 }}>
       <View style={styles.container}>
         <View
@@ -83,83 +222,26 @@ export default function GameScreen() {
           }}
         >
           <ThemedText style={{ flex: 1 }} type="subtle">
-            {difficultyMapping[sudoku.difficulty]}
+            {difficultyMapping[difficulty]}
           </ThemedText>
           <ThemedText style={{ flex: 1, textAlign: "center" }} type="subtle">
-            {sudoku.size}x{sudoku.size}
+            {size}x{size}
           </ThemedText>
-          <ThemedText style={{ flex: 1, textAlign: "right" }} type="subtle">
-            {sudoku.formattedTime}
-          </ThemedText>
+          <GameTime />
         </View>
 
         {/* Game Board */}
         <View style={styles.gameBoard}>
           {/* Game Board Content */}
-          {sudoku.board.map((row, rowIndex) => (
-            <View key={rowIndex} style={styles.row}>
-              {row.map((cell, cellIndex) => {
-                const boxSize = Math.sqrt(sudoku.size); // 3 para jogos 9x9, 2 para jogos 4x4
-
-                const isSameRow = selectedCell?.row === rowIndex;
-                const isSameCol = selectedCell?.col === cellIndex;
-
-                const isSameBox =
-                  selectedCell &&
-                  Math.floor(rowIndex / boxSize) ===
-                    Math.floor(selectedCell.row / boxSize) &&
-                  Math.floor(cellIndex / boxSize) ===
-                    Math.floor(selectedCell.col / boxSize);
-
-                const isAdjacent = isSameRow || isSameCol;
-
-                const isSelected = isSameRow && isSameCol;
-
-                return (
-                  <Pressable
-                    key={cellIndex}
-                    onPressOut={hapticFeedback}
-                    onPress={() =>
-                      setSelectedCell({
-                        row: rowIndex,
-                        col: cellIndex,
-                        validNumbers: sudoku.validNumbers(rowIndex, cellIndex),
-                      })
-                    }
-                    style={({ pressed }) => [
-                      {
-                        backgroundColor:
-                          Colors[colorScheme ?? "dark"].background,
-                      },
-                      styles.cell,
-                      isSelected
-                        ? styles.selectedCell
-                        : isAdjacent
-                          ? selectedCellAdjacentStyle[colorScheme ?? "dark"]
-                          : isSameBox
-                            ? selectedCellBoxStyle[colorScheme ?? "dark"]
-                            : null,
-                      pressed && styles.buttonPressed,
-                    ]}
-                  >
-                    <ThemedText
-                      style={[
-                        styles.cellText,
-                        isAdjacent &&
-                          selectedCellAdjacentTextStyle[colorScheme ?? "dark"],
-                        sudoku!.lockedPositions![rowIndex][cellIndex] && {
-                          fontWeight: "700",
-                          opacity: 0.7,
-                        },
-                      ]}
-                    >
-                      {cell !== 0 ? cell : ""}
-                    </ThemedText>
-                  </Pressable>
-                );
-              })}
-            </View>
-          ))}
+          <PureGameBoard
+            board={board}
+            size={size}
+            selectedCell={selectedCell}
+            setSelectedCell={setSelectedCell}
+            validNumbers={validNumbers}
+            lockedPositions={lockedPositions}
+            colorScheme={colorScheme ?? "dark"}
+          />
         </View>
       </View>
 
@@ -181,7 +263,7 @@ export default function GameScreen() {
             ]}
             onPressIn={hapticFeedback}
             onPress={() => {
-              sudoku.generateTip();
+              generateTip();
             }}
           >
             <Text style={styles.buttonTextBlack}>Dica</Text>
@@ -195,7 +277,7 @@ export default function GameScreen() {
               !selectedCell ||
               selectedCell.row === undefined ||
               selectedCell.col === undefined ||
-              sudoku.lockedPositions?.[selectedCell.row][selectedCell.col]
+              lockedPositions?.[selectedCell.row][selectedCell.col]
                 ? styles.buttonDisabled
                 : null,
             ]}
@@ -203,7 +285,7 @@ export default function GameScreen() {
               !selectedCell ||
               selectedCell.row === undefined ||
               selectedCell.col === undefined ||
-              sudoku.lockedPositions![selectedCell.row][selectedCell.col]
+              lockedPositions![selectedCell.row][selectedCell.col]
             }
             onPressIn={hapticFeedback}
             onPress={() => {
@@ -213,7 +295,7 @@ export default function GameScreen() {
                 selectedCell.col === undefined
               )
                 return;
-              sudoku.removeNumber(selectedCell.row, selectedCell.col);
+              removeNumber(selectedCell.row, selectedCell.col);
               setSelectedCell(null);
             }}
           >
@@ -260,9 +342,8 @@ export default function GameScreen() {
               {Array.from({ length: 3 }, (_, j) => {
                 const isSelected =
                   selectedCell &&
-                  sudoku.board &&
-                  sudoku.board[selectedCell.row][selectedCell.col] ===
-                    i * 3 + j + 1;
+                  board &&
+                  board[selectedCell.row][selectedCell.col] === i * 3 + j + 1;
                 const isDisabled =
                   !selectedCell ||
                   !selectedCell.validNumbers.find(
@@ -270,7 +351,7 @@ export default function GameScreen() {
                   );
                 const isLocked =
                   selectedCell &&
-                  sudoku?.lockedPositions?.[selectedCell.row][selectedCell.col];
+                  lockedPositions?.[selectedCell.row][selectedCell.col];
                 return (
                   <Pressable
                     key={j}
@@ -285,15 +366,13 @@ export default function GameScreen() {
                       }
 
                       if (
-                        sudoku?.lockedPositions?.[selectedCell.row][
-                          selectedCell.col
-                        ]
+                        lockedPositions?.[selectedCell.row][selectedCell.col]
                       ) {
                         console.error("Cell is locked");
                         return;
                       }
 
-                      sudoku.addNumber(
+                      addNumber(
                         selectedCell.row,
                         selectedCell.col,
                         i * 3 + j + 1,
@@ -331,40 +410,7 @@ export default function GameScreen() {
         </ThemedView>
       </View>
 
-      {!sudoku.emptyCells && (
-        <>
-          <ThemedModal
-            title="🏆 Você Venceu!"
-            visible={true}
-            contentStyle={{
-              gap: 16,
-            }}
-            onRequestClose={() => {
-              saveTime(sudoku.seconds, sudoku.difficulty);
-              sudoku.clearGame();
-              router.navigate("/");
-            }}
-            transparent
-          >
-            <ThemedText>Tempo: {sudoku.formattedTime}</ThemedText>
-            <ThemedButton
-              style={{ width: "100%" }}
-              title="Voltar ao menu"
-              onPress={() => {
-                saveTime(sudoku.seconds, sudoku.difficulty);
-
-                sudoku.clearGame();
-                router.navigate("/");
-              }}
-            />
-          </ThemedModal>
-          <ConfettiCannon
-            count={200}
-            origin={{ x: -10, y: 0 }}
-            fadeOut={true}
-          />
-        </>
-      )}
+      {!emptyCells && <GameOverModal />}
     </ThemedView>
   ) : (
     <ThemedView>
@@ -373,6 +419,40 @@ export default function GameScreen() {
   );
 }
 
+const GameOverModal = () => {
+  const { formattedTime, seconds, difficulty, clearGame } = useSudoku();
+  return (
+    <>
+      <ThemedModal
+        title="🏆 Você Venceu!"
+        visible={true}
+        contentStyle={{
+          gap: 16,
+        }}
+        onRequestClose={() => {
+          saveTime(seconds, difficulty);
+          clearGame();
+          router.navigate("/");
+        }}
+        transparent
+      >
+        <ThemedText>Tempo: {formattedTime}</ThemedText>
+        <ThemedButton
+          style={{ width: "100%" }}
+          title="Voltar ao menu"
+          onPress={() => {
+            saveTime(seconds, difficulty);
+
+            clearGame();
+            router.navigate("/");
+          }}
+        />
+      </ThemedModal>
+      <ConfettiCannon count={200} origin={{ x: -10, y: 0 }} fadeOut={true} />
+    </>
+  );
+};
+
 const styles = StyleSheet.create({
   container: {
     padding: Spacing.two,
@@ -380,14 +460,29 @@ const styles = StyleSheet.create({
     marginVertical: "auto",
   },
   gameBoard: {
-    width: "100%",
-    aspectRatio: "1",
+    maxWidth: "100%",
+    aspectRatio: 1,
     borderWidth: 1,
-    borderRadius: 10,
-    borderColor: "#ccc",
-    backgroundColor: "#ccc",
     gap: 1,
+    backgroundColor: "#ccc",
+    borderColor: "#ccc",
+    borderRadius: 10,
     overflow: "hidden",
+    position: "relative",
+  },
+  thickLineVertical: {
+    position: "absolute",
+    width: 2,
+    height: "100%",
+    zIndex: 10,
+    marginLeft: -1,
+  },
+  thickLineHorizontal: {
+    position: "absolute",
+    width: "100%",
+    height: 2,
+    zIndex: 10,
+    marginTop: -1,
   },
   row: {
     flexDirection: "row",
@@ -484,6 +579,7 @@ const gameControls = StyleSheet.create({
     borderBottomWidth: 0,
     flexDirection: "row",
     gap: 10,
+    height: "auto",
   },
   light: {
     backgroundColor: "#f5f5f5",

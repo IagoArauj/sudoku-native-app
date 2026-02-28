@@ -11,11 +11,11 @@ import {
 import { loadGame, saveGame } from "@/utils/storage";
 import {
   createContext,
-  useState,
   useCallback,
-  useEffect,
   useContext,
+  useEffect,
   useMemo,
+  useState,
 } from "react";
 import { AppState, AppStateStatus } from "react-native";
 
@@ -72,8 +72,6 @@ export const GameContextProvider = ({
   const emptyCells = useMemo(() => {
     if (!board || loading) return null;
 
-    console.log("emptyCells", board);
-
     const emptyCells = [];
     for (let row = 0; row < size; row++) {
       for (let col = 0; col < size; col++) {
@@ -83,7 +81,7 @@ export const GameContextProvider = ({
 
     if (emptyCells.length === 0) return null;
     return emptyCells;
-  }, [board, size, loading]);
+  }, [board, loading]);
 
   // time formated in HH:MM:SS
   const formattedTime = useMemo(() => {
