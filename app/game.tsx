@@ -16,6 +16,7 @@ import {
   View,
 } from "react-native";
 import ConfettiCannon from "react-native-confetti-cannon";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const hapticFeedback = () => {
   if (process.env.EXPO_OS === "ios") {
@@ -211,7 +212,7 @@ export default function GameScreen() {
   }, [board, setIsTimerActive]);
 
   return board && lockedPositions && size ? (
-    <ThemedView style={{ flex: 1, gap: 10 }}>
+    <SafeAreaView style={{ flex: 1, gap: 10 }}>
       <View style={styles.container}>
         <View
           style={{
@@ -411,7 +412,7 @@ export default function GameScreen() {
       </View>
 
       {!emptyCells && <GameOverModal />}
-    </ThemedView>
+    </SafeAreaView>
   ) : (
     <ThemedView>
       <ThemedText>Carregando...</ThemedText>
